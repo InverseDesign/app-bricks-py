@@ -1,8 +1,9 @@
 [build-system]
 # 【修改处 1】删除了 "setuptools_scm>=8"
 requires = ["setuptools>=77,<81", "wheel", "docstring_parser>=0.16", "msgpack>=1.0.0", "watchdog", "requests", "Pillow", "numpy", "pyyaml"]
-build-backend = "builder"
-backend-path = ["src/arduino/app_tools"]
+# build-backend = "builder"
+# backend-path = ["src/arduino/app_tools"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "arduino_app_bricks"
