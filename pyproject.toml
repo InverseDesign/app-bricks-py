@@ -6,8 +6,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "arduino_app_bricks"
-# 通过 attr 指令从 src/arduino/_version.py 读取版本（取代原 setuptools_scm 动态生成）
-version = "attr: arduino._version.__version__"
+# 版本从 src/arduino/_version.py 动态读取（取代原 setuptools_scm git tag 方案）
+# PEP 621 要求 dynamic 字段显式列出，再用 [tool.setuptools.dynamic] 配置解析规则
+dynamic = ["version"]
 authors = [
   { name="Marco Colombo", email="m.colombo@arduino.cc" },
   { name="Roberto Gazia", email="r.gazia@arduino.cc" },
@@ -120,6 +121,11 @@ arduino-bricks-update-ai-container-ref = "arduino.app_tools.module_listing:updat
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["*"]
+
+# 动态版本解析：从 src/arduino/_version.py 的 __version__ 读取
+# 配合 [project].dynamic = ["version"] 使用（PEP 621 合规写法）
+[tool.setuptools.dynamic]
+version = {attr = "arduino._version.__version__"}
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.md"]
