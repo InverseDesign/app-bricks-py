@@ -35,6 +35,34 @@ def normalize_registry(registry: str) -> str:
     return f"{registry}/"
 
 
+def normalize_image_ref(ref: str) -> str:
+    """Lowercase the path components of an image reference.
+
+    go-containerregistry v0.20.x strictly validates repo path components
+    against the OCI distribution spec, which requires lowercase alphanumerics
+    with limited separators — uppercase in the owner / repo path causes
+    ``could not parse reference`` failures. GHCR itself is case-insensitive,
+    so callers like ``docker-publish.yml`` may pass ``InverseDesign`` and we
+    transparently lowercase to ``inversedesign`` to keep syft / crane happy.
+
+    The ``[host/]repo[:tag][@digest]`` grammar is preserved — only the path
+    component after the host is lowercased.
+    """
+    if not ref:
+        return ref
+    # Split off digest first (preserved as-is)
+    base, sep, digest = ref.partition("@")
+    # Split off tag (preserved as-is) — note: tag is everything after the LAST `:`
+    # that is not inside a host:port. We use a simple split on the last `/` boundary.
+    if "/" in base:
+        host_part, _, path_part = base.partition("/")
+    else:
+        host_part, path_part = "", base
+    lowered_path = path_part.lower()
+    rebuilt = f"{host_part}/{lowered_path}" if host_part else lowered_path
+    return f"{rebuilt}{sep}{digest}" if sep else rebuilt
+
+
 def load_json(path: Path) -> dict[str, Any]:
     """Load and validate a JSON file as a dict."""
     try:
@@ -112,7 +140,7 @@ def resolve_runtime_base(
         raise SbomDeltaError(f"Container '{container}' is missing 'sbom.runtime_base'.")
 
     context = build_resolution_context(config=config, registry=registry, version=version, build_args=build_args)
-    return resolve_template(runtime_base.strip(), context)
+    return normalize_image_ref(resolve_template(runtime_base.strip(), context))
 
 
 # ---------------------------------------------------------------------------
@@ -451,7 +479,7 @@ def discover_containers(containers_dir: Path) -> list[str]:
 
 def build_container_image(registry: str, container: str, version: str) -> str:
     """Build the fully qualified image reference for a container."""
-    return f"{normalize_registry(registry)}app-bricks/{container}:{version}"
+    return normalize_image_ref(f"{normalize_registry(registry)}app-bricks/{container}:{version}")
 
 
 PLATFORM = "linux/arm64"
