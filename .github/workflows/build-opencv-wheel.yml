@@ -11,8 +11,11 @@ permissions:
 jobs:
   build-wheels:
     runs-on: ubuntu-24.04-arm
+    # 本分支 app-bricks-py312：基础镜像改用 python:3.12-slim-bookworm
+    # - 原 debian:trixie 默认 python=3.13，pip3 wheel 只能产 cp313
+    # - python:3.12-slim-bookworm 自带 python 3.12 + pip，pip3 wheel 直接产 cp312
     container:
-      image: debian:trixie
+      image: python:3.12-slim-bookworm
       options: --user root
     timeout-minutes: 180
 
@@ -25,9 +28,10 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends gh git ca-certificates build-essential pkg-config ninja-build
 
-      - name: Install Python
+      - name: Install Python dev headers
         run: |
-          apt-get install -y --no-install-recommends python3 python3-dev python3-pip
+          # python:3.12-slim-bookworm 已自带 python 3.12 与 pip，仅需补 python3-dev 头文件供 C 扩展编译
+          apt-get install -y --no-install-recommends python3-dev
 
       - name: Install FFmpeg dependencies
         run: |
@@ -75,11 +79,11 @@ jobs:
       - name: Create or update release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |          
+        run: |
           VERSION="${{ steps.version.outputs.version }}"
           TAG="opencv/$VERSION"
           REPO="${{ github.repository }}"
-          
+
           # Delete release if it already exists
           if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
             echo "Release $TAG already exists. Deleting..."
@@ -91,5 +95,5 @@ jobs:
             opencv-python/opencv_python_headless*.whl \
             --repo "$REPO" \
             --latest=false \
-            --title "opencv-python-headless $VERSION" \
-            --notes "OpenCV Python headless wheel version $VERSION optimized for ARM64 architecture with GStreamer and FFmpeg support."
+            --title "opencv-python-headless $VERSION (cp312)" \
+            --notes "OpenCV Python headless wheel version $VERSION optimized for ARM64 architecture with GStreamer and FFmpeg support. Built for Python 3.12 (cp312) on the app-bricks-py312 branch."
