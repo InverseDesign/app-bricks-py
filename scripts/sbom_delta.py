@@ -486,50 +486,45 @@ PLATFORM = "linux/arm64"
 
 
 def scan_image(image: str, output_path: Path) -> None:
-    """Scan an image with Syft and save the SPDX JSON report."""
+    """Scan an image with Syft and save the SPDX JSON report.
+
+    Uses ``syft registry:<image>`` exclusively — pulling all layers from
+    the registry, extracting the filesystem, and enumerating packages.
+    On aarch64 with a ~230 MB image this typically takes 10-20 minutes;
+    we cap it with a 15-minute timeout to fail fast if anything hangs
+    (e.g. network stall, mirror desync).
+    """
     print(f"    syft scan: {image}", file=sys.stderr)
 
-    # 先用 crane pull 把镜像从 registry 拉到本地 docker daemon。
-    # syft 的 `registry:` scheme 走 go-containerregistry，对 GHCR 的 token
-    # 鉴权支持不稳定（与 crane 行为不一致）。crane 已经在 rebuild_check
-    # 步骤验证过能成功访问 GHCR，复用同一组凭证。
-    # 本地镜像名简化为 "app-bricks-scan-target"，避免 docker 解析长 registry
-    # 名 + tag 时的边界问题。
-    scan_target = f"app-bricks-scan-target:{image.split(':')[-1]}"
-    crane_pulled = False
-    crane_result = subprocess.run(
-        ["crane", "pull", image, scan_target, "--platform", PLATFORM],
-        capture_output=True, text=True, check=False,
-    )
-    if crane_result.returncode == 0:
-        crane_pulled = True
-        print(f"    crane pull: ok -> {scan_target}", file=sys.stderr)
-    else:
-        details = (crane_result.stderr or crane_result.stdout or "").strip() or f"crane exited with status {crane_result.returncode}"
-        print(f"    crane pull: failed ({details}); falling back to syft registry:", file=sys.stderr)
-
-    commands = [
-        # syft v1.x 起 --file 弃用，改为 --output FORMAT=PATH
-        # 优先用本地已 pull 的镜像（crane 凭证走通）
-        ["syft", scan_target, "--platform", PLATFORM, "-o", f"spdx-json={output_path}"],
-        ["syft", f"registry:{image}", "--platform", PLATFORM, "-o", f"spdx-json={output_path}"],
+    cmd = [
+        "syft", f"registry:{image}", "--platform", PLATFORM,
+        "-o", f"spdx-json={output_path}",
     ]
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, check=False, timeout=900,
+        )
+    except subprocess.TimeoutExpired as exc:
+        # syft hung past 15 min — surface a clear error rather than letting
+        # the CI runner sit for an hour before GH Actions finally times out.
+        partial = (exc.stderr or "").strip() if exc.stderr else ""
+        msg = f"syft scan timed out after 900s for '{image}'"
+        if partial:
+            msg += f"\n--- partial stderr ---\n{partial}"
+        raise SbomDeltaError(msg) from exc
 
-    last_result: subprocess.CompletedProcess[str] | None = None
-    last_cmd: list[str] | None = None
-    for cmd in commands:
-        last_result = subprocess.run(cmd, capture_output=True, text=True, check=False)
-        last_cmd = cmd
-        if last_result.returncode == 0:
-            # Re-write as pretty-printed JSON
-            raw = load_json(output_path)
-            output_path.write_text(json.dumps(raw, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-            return
+    if result.returncode == 0:
+        # Re-write as pretty-printed JSON
+        raw = load_json(output_path)
+        output_path.write_text(json.dumps(raw, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        return
 
-    details = (last_result.stderr or last_result.stdout or "").strip() if last_result else ""
-    if not details and last_result:
-        details = f"syft exited with status {last_result.returncode} (crane_pulled={crane_pulled}) cmd={' '.join(last_cmd) if last_cmd else 'n/a'}"
-    raise SbomDeltaError(f"failed to scan image '{image}': {details}")
+    details = (result.stderr or result.stdout or "").strip() or f"syft exited with status {result.returncode}"
+    raise SbomDeltaError(
+        f"failed to scan image '{image}' (syft rc={result.returncode})\n"
+        f"--- command ---\n{' '.join(cmd)}\n"
+        f"--- syft output ---\n{details}"
+    )
 
 
 def generate_delta_for_container(
