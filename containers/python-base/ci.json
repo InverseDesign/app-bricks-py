@@ -4,7 +4,10 @@
   "tag_latest": true,
   "build_whl": false,
   "update_compose": false,
-  "build_args": {},
+  "build_args": {
+    "OPENCV_REPO_OWNER": "InverseDesign",
+    "OPENCV_TAG_SUFFIX": "-cp312"
+  },
   "sbom": {
     "runtime_base": "python:3.12-slim"
   },

@@ -8,6 +8,8 @@ FROM python:3.12-slim AS builder
 ARG PYTHON_VERSION=cp312
 ARG OPENCV_REPO_OWNER=arduino
 ARG OPENCV_VERSION=4.13.0.92
+# Tag 后缀：app-bricks-py312 分支会传 -cp312，arduino 上游默认空字符串
+ARG OPENCV_TAG_SUFFIX=
 
 COPY ./requirements-base.txt /app/requirements.txt
 
@@ -19,7 +21,7 @@ RUN set -ex; \
     # Install dependencies for building ALSA
     apt-get install -y --no-install-recommends --no-install-suggests libasound2-dev libalsaplayer-dev portaudio19-dev libzbar0; \
     # Append OpenCV wheel URL (full wheel name with platform details)
-    echo "https://github.com/${OPENCV_REPO_OWNER}/app-bricks-py/releases/download/opencv/${OPENCV_VERSION}/opencv_python_headless-${OPENCV_VERSION}-${PYTHON_VERSION}-${PYTHON_VERSION}-linux_aarch64.whl" >> /app/requirements.txt; \
+    echo "https://github.com/${OPENCV_REPO_OWNER}/app-bricks-py/releases/download/opencv/${OPENCV_VERSION}${OPENCV_TAG_SUFFIX}/opencv_python_headless-${OPENCV_VERSION}-${PYTHON_VERSION}-${PYTHON_VERSION}-linux_aarch64.whl" >> /app/requirements.txt; \
     # Install Python dependencies
     pip install --no-cache-dir uv; \
     uv pip install --system --no-cache-dir -r /app/requirements.txt; \
