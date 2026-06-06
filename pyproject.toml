@@ -1,22 +1,26 @@
 [build-system]
-requires = ["setuptools>=77,<81", "wheel", "setuptools_scm>=8", "docstring_parser>=0.16", "msgpack>=1.0.0", "watchdog", "requests", "Pillow", "numpy", "pyyaml"]
-build-backend = "builder"
-backend-path = ["src/arduino/app_tools"]
+# 已移除 setuptools_scm：原项目依赖 git tag 解析版本，在非 tag 提交/本地编辑安装时无法工作
+requires = ["setuptools>=77,<81", "wheel", "docstring_parser>=0.16", "msgpack>=1.0.0", "watchdog", "requests", "Pillow", "numpy", "pyyaml"]
+# 已切回标准 setuptools 后端：原 builder 强依赖 setuptools_scm 读 git tag，与本分支移除 setuptools_scm 的决定冲突
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "arduino_app_bricks"
-dynamic = ["version"]
+# 通过 attr 指令从 src/arduino/_version.py 读取版本（取代原 setuptools_scm 动态生成）
+version = "attr: arduino._version.__version__"
 authors = [
   { name="Marco Colombo", email="m.colombo@arduino.cc" },
   { name="Roberto Gazia", email="r.gazia@arduino.cc" },
 ]
 description = "Arduino App Bricks for Apps Lab"
 readme = "README.md"
-requires-python = ">=3.13"
+# 锁定 Python 3.12：mediapipe 官方 wheel 最新支持到 3.12，3.13 不可用
+requires-python = ">=3.12,<3.13"
 license = "MPL-2.0"
 license-files = ["LICENSE.txt"]
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
     "Operating System :: OS Independent",
 ]
 dependencies = [
@@ -120,13 +124,7 @@ include = ["*"]
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.md"]
 
-
-[tool.setuptools_scm]
-tag_regex = '^(?:ai|release)/(?P<version>v?\d+(?:\.\d+)*(?:rc\d+)?)$'
-write_to = "src/arduino/_version.py"
-root = "."
-version_scheme = "only-version"
-local_scheme = "no-local-version"
+# 已删除 [tool.setuptools_scm] 块：版本已写死，不再需要 git tag 解析
 
 [tool.ruff]
 line-length = 150

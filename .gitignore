@@ -173,7 +173,7 @@ cython_debug/
 
 # Build
 src/arduino/app_bricks/static
-_version.py
+# _version.py 不再由 setuptools_scm 动态生成；本分支改用静态文件 src/arduino/_version.py 维护版本
 TODO.*
 docs/
 

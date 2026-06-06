@@ -10,7 +10,7 @@ from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, timezone
 
 
 DEFAULT_CERTS_DIR = "/app/certs"
@@ -191,8 +191,8 @@ class TLSCertificateManager:
         cert = cert.issuer_name(issuer)
         cert = cert.public_key(private_key.public_key())
         cert = cert.serial_number(x509.random_serial_number())
-        cert = cert.not_valid_before(datetime.now(UTC))
-        cert = cert.not_valid_after(datetime.now(UTC) + timedelta(days=validity_days))
+        cert = cert.not_valid_before(datetime.now(timezone.utc))
+        cert = cert.not_valid_after(datetime.now(timezone.utc) + timedelta(days=validity_days))
         cert = cert.add_extension(x509.SubjectAlternativeName([x509.DNSName(common_name)]), critical=False)
         cert = cert.sign(private_key, hashes.SHA256())
 

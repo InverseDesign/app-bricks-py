@@ -110,7 +110,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     needs: [ detect ]
     env:
-      PYTHON_VERSION: "3.13"
+      PYTHON_VERSION: "3.12"
       TASKFILE_VERSION: "3.45.4"
     steps:
       - name: Checkout repository
@@ -118,17 +118,15 @@ jobs:
 
       - name: Build wheel in debian:trixie
         run: |
-          # Remove tags that setuptools_scm can't parse (only ai/* and release/* are valid)
+          # 清理非 (ai|release)/* 前缀的 tag，避免干扰 [tool.setuptools] 之外的内部脚本
           git tag -l | grep -v -E '^(ai|release)/' | xargs -r git tag -d
 
-          # Explicitly set the version so setuptools_scm does not need the git tag to exist
-          # (handles workflow_dispatch runs where no tag has been pushed yet)
+          # 启动 build 容器（版本号由 src/arduino/_version.py 静态提供；不再使用 setuptools_scm）
           docker run --rm \
             -v "${{ github.workspace }}:/${{ github.workspace }}" \
             -w "${{ github.workspace }}" \
             -e SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)" \
             -e PUBLIC_IMAGE_REGISTRY_BASE="${{ env.GHCR_DESTINATION_ORG }}/" \
-            -e SETUPTOOLS_SCM_PRETEND_VERSION="${{ needs.detect.outputs.version }}" \
             debian:trixie bash -c "
               set -e
               apt-get update
@@ -137,7 +135,7 @@ jobs:
               echo 'break-system-packages = true' >> /etc/pip.conf
               git config --global --add safe.directory '*'
               pip install go-task-bin==${{ env.TASKFILE_VERSION }}
-              pip install https://github.com/${{ github.repository }}/releases/download/opencv/4.13.0.92/opencv_python_headless-4.13.0.92-cp313-cp313-linux_aarch64.whl
+              pip install https://github.com/${{ github.repository }}/releases/download/opencv/4.13.0.92/opencv_python_headless-4.13.0.92-cp312-cp312-linux_aarch64.whl
               task init:ci
               task build
             "
@@ -153,7 +151,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     needs: [ detect, upload-whl ]
     env:
-      PYTHON_VERSION: "3.13"
+      PYTHON_VERSION: "3.12"
       TASKFILE_VERSION: "3.45.4"
     strategy:
       fail-fast: false
@@ -305,7 +303,7 @@ jobs:
     needs: [ detect, build ]
     if: needs.detect.outputs.downstream_containers != '[]'
     env:
-      PYTHON_VERSION: "3.13"
+      PYTHON_VERSION: "3.12"
       TASKFILE_VERSION: "3.45.4"
     strategy:
       fail-fast: false

@@ -9,7 +9,7 @@ jobs:
   check-dependency-licenses:
     runs-on: ubuntu-24.04-arm
     env:
-      PYTHON_VERSION: "3.13"
+      PYTHON_VERSION: "3.12"
       TASKFILE_VERSION: "v3.44.0"
       TASKFILE_PATH: "/home/runner/go/bin"
     steps:

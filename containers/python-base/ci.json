@@ -6,7 +6,7 @@
   "update_compose": false,
   "build_args": {},
   "sbom": {
-    "runtime_base": "python:3.13-slim"
+    "runtime_base": "python:3.12-slim"
   },
   "downstream": ["python-apps-base"]
 }

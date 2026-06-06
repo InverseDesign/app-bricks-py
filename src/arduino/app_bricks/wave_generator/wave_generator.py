@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 import threading
-from typing import Literal
+from typing import Literal, TypeAlias
 
 import numpy as np
 
@@ -12,7 +12,7 @@ from arduino.app_peripherals.speaker import Speaker, BaseSpeaker, ALSASpeaker
 
 logger = Logger("WaveGenerator")
 
-type WaveType = Literal["sine", "square", "sawtooth", "triangle"]
+WaveType: TypeAlias = Literal["sine", "square", "sawtooth", "triangle"]
 
 
 @brick

@@ -31,5 +31,5 @@ A simple, robust Python documentation generator for producing clean, PEP8-compli
 
 ## Requirements
 
-- Python 3.13+
+- Python 3.12+
 - docstring_parser 0.16+

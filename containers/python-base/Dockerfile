@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: MPL-2.0
 
 
-FROM python:3.13-slim AS builder
+FROM python:3.12-slim AS builder
 
-ARG PYTHON_VERSION=cp313
+ARG PYTHON_VERSION=cp312
 ARG OPENCV_REPO_OWNER=arduino
 ARG OPENCV_VERSION=4.13.0.92
 
@@ -25,22 +25,22 @@ RUN set -ex; \
     uv pip install --system --no-cache-dir -r /app/requirements.txt; \
     rm /app/requirements.txt; \
     # Strip debug symbols, tests and remove unneeded packages to reduce size
-    find /usr/local/lib/python3.13/site-packages -type f -name "*.so" -exec strip -s {} +; \
-    find /usr/local/lib/python3.13/site-packages -type f -name "*.so.*" -exec strip -s {} +; \
-    find /usr/local/lib/python3.13/site-packages -type d -name "tests" -exec rm -r {} +; \
+    find /usr/local/lib/python3.12/site-packages -type f -name "*.so" -exec strip -s {} +; \
+    find /usr/local/lib/python3.12/site-packages -type f -name "*.so.*" -exec strip -s {} +; \
+    find /usr/local/lib/python3.12/site-packages -type d -name "tests" -exec rm -r {} +; \
     apt remove -y build-essential ca-certificates binutils libasound2-dev libalsaplayer-dev portaudio19-dev; \
     apt-get clean; \
     apt-get autoclean -y; \
     apt-get autoremove -y
 
 
-FROM python:3.13-slim AS production
+FROM python:3.12-slim AS production
 
 ARG LIBCAMERA_REPO_OWNER=arduino
 ARG LIBCAMERA_VERSION=0.7.0-4
 
 # Copy the installed dependencies from the 'builder' stage
-COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 RUN set -ex; \

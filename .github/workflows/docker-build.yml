@@ -147,7 +147,7 @@ jobs:
     if: needs.setup.outputs.containers != '[]'
     runs-on: ubuntu-24.04-arm
     env:
-      PYTHON_VERSION: "3.13"
+      PYTHON_VERSION: "3.12"
       TASKFILE_VERSION: "3.45.4"
     strategy:
       fail-fast: false
@@ -222,7 +222,7 @@ jobs:
     if: needs.setup.outputs.downstream_containers != '[]'
     runs-on: ubuntu-24.04-arm
     env:
-      PYTHON_VERSION: "3.13"
+      PYTHON_VERSION: "3.12"
       TASKFILE_VERSION: "3.45.4"
     strategy:
       fail-fast: false
@@ -239,7 +239,7 @@ jobs:
       - name: Build wheel in debian:trixie
         if: matrix.container == 'python-apps-base'
         run: |
-          # Remove tags that setuptools_scm can't parse (only ai/* and release/* are valid)
+          # 清理非 (ai|release)/* 前缀的 tag，避免干扰其他内部脚本
           git tag -l | grep -v -E '^(ai|release)/' | xargs -r git tag -d
 
           docker run --rm \

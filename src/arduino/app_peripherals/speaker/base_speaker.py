@@ -4,7 +4,7 @@
 
 import time
 import threading
-from typing import Literal
+from typing import Literal, TypeAlias
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
@@ -16,8 +16,8 @@ from arduino.app_utils import Logger
 
 logger = Logger("Speaker")
 
-type FormatPlain = type | np.dtype | str
-type FormatPacked = tuple[FormatPlain, bool]
+FormatPlain: TypeAlias = type | np.dtype | str
+FormatPacked: TypeAlias = tuple[FormatPlain, bool]
 
 
 class BaseSpeaker(ABC):

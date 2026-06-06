@@ -6,7 +6,7 @@ The repo produces container images, each with its own Dockerfile under `containe
 
 | Image | Base | Purpose |
 |---|---|---|
-| **python-base** | `python:3.13-slim` | Foundation layer — system deps, user/group setup, fonts |
+| **python-base** | `python:3.12-slim` | Foundation layer — system deps, user/group setup, fonts |
 | **python-apps-base** | `python-base` | App runtime — installs the Arduino App Bricks `.whl`, Streamlit config |
 | **ei-models-runner** | Edge Impulse inference image | AI/ML model inference with OOTB models |
 

@@ -19,7 +19,7 @@ RUN bash -c 'WHL_FILES=(/app/*.whl) && uv pip install --system --no-cache-dir "$
     # ensure permissions for /run.sh
     chmod 755 /*.sh; \
     # trim dependencies
-    find /usr/local/lib/python3.13/site-packages -type d -name "tests" -exec rm -r {} +; \
+    find /usr/local/lib/python3.12/site-packages -type d -name "tests" -exec rm -r {} +; \
     # precompile python files to .pyc to speed up startup time
     python -m compileall /usr/local/bin; \
     python -m compileall /usr/local/lib

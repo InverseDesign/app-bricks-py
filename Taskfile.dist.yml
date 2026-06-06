@@ -1,7 +1,7 @@
 version: "3"
 
 vars:
-  PYTHON_VERSION_MIN: "3.13"
+  PYTHON_VERSION_MIN: "3.12"
   LICENSED_VERSION: '5.0.6'
 
 tasks:
@@ -123,7 +123,7 @@ tasks:
         echo "Creating library venv (.licensed-venv)..."
         python3 -m venv .licensed-venv
         .licensed-venv/bin/python -m pip install --upgrade pip -q
-        SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0 .licensed-venv/bin/pip install -q ".[all]"
+        .licensed-venv/bin/pip install -q ".[all]"
       - |
         for d in containers/*/; do
           venv_path="$d.licensed-venv"
