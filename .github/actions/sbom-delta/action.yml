@@ -17,7 +17,11 @@ runs:
   steps:
     - name: Install syft
       shell: bash
-      run: curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+      # Pin to v1.45.1: passing a version skips the "find latest release"
+      # call against the GitHub API, which has returned transient 504s on
+      # the CDN for this action. v1.45.1 is the version this action was
+      # last verified against.
+      run: curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin v1.45.1
 
     - name: Install task
       shell: bash
