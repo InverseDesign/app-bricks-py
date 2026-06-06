@@ -462,8 +462,9 @@ def scan_image(image: str, output_path: Path) -> None:
     print(f"    syft scan: {image}", file=sys.stderr)
 
     commands = [
-        ["syft", f"registry:{image}", "--platform", PLATFORM, "-o", "spdx-json", "--file", str(output_path), "--quiet"],
-        ["syft", image, "--platform", PLATFORM, "-o", "spdx-json", "--file", str(output_path), "--quiet"],
+        # syft v1.x 起 --file 弃用，改为 --output FORMAT=PATH
+        ["syft", f"registry:{image}", "--platform", PLATFORM, "-o", f"spdx-json={output_path}", "--quiet"],
+        ["syft", image, "--platform", PLATFORM, "-o", f"spdx-json={output_path}", "--quiet"],
     ]
 
     last_result: subprocess.CompletedProcess[str] | None = None
