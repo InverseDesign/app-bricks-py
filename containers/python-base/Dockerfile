@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 
-FROM python:3.12-slim AS builder
+FROM python:3.12-slim-bookworm AS builder
 
 ARG PYTHON_VERSION=cp312
 ARG OPENCV_REPO_OWNER=arduino
@@ -36,7 +36,7 @@ RUN set -ex; \
     apt-get autoremove -y
 
 
-FROM python:3.12-slim AS production
+FROM python:3.12-slim-bookworm AS production
 
 ARG LIBCAMERA_REPO_OWNER=arduino
 ARG LIBCAMERA_VERSION=0.7.0-4
@@ -54,24 +54,40 @@ RUN set -ex; \
     # Install dependencies for running ALSA
     apt-get install -y --no-install-recommends --no-install-suggests alsa-utils libportaudiocpp0; \
     # Install dependencies for running OpenCV with Gstreamer backend
-    apt-get install -y --no-install-recommends --no-install-suggests libavcodec61 libavformat61 libavutil59 libswscale8; \
-    apt-get install -y --no-install-recommends --no-install-suggests libjpeg62-turbo libtiff6 libpng16-16t64 libwebp7 libwebpdecoder3 libwebpdemux2 libwebpmux3 libopenblas0 liblapacke; \
+    # The opencv-python-headless wheel from the fork is built against ffmpeg 5.x
+    # (libavcodec 59, libavformat 59, libavutil 57, libswscale 6), which matches
+    # Debian 12 bookworm. Debian 13 trixie ships ffmpeg 7.x and would break cv2
+    # with "libavcodec.so.59: cannot open shared object file".
+    apt-get install -y --no-install-recommends --no-install-suggests libavcodec59 libavformat59 libavutil57 libswscale6; \
+    # libgl1 is required by mediapipe's opencv-contrib-python (needs libGL.so.1).
+    # libegl1/libgles2 are the headless GL stack we actually want, but the
+    # contrib build of opencv is hard-coded to link against X11/GL symbols.
+    apt-get install -y --no-install-recommends --no-install-suggests libgl1 libglib2.0-0; \
+    apt-get install -y --no-install-recommends --no-install-suggests libjpeg62-turbo libtiff6 libpng16-16 libwebp7 libopenblas0 liblapacke; \
     apt-get install -y --no-install-recommends --no-install-suggests libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 gstreamer1.0-plugins-good gstreamer1.0-plugins-base-apps; \
-    # Install dependencies for running libcamera
-    apt-get install -y libpisp-common libboost-filesystem1.83.0 libboost-log1.83.0 libboost-thread1.83.0 libpisp1 libegl1 libgles2 libyaml-0-2 liblttng-ust1 libdw1t64 libyuv0; \
-    wget -O libcamera0.7_${LIBCAMERA_VERSION}_arm64.deb https://github.com/${LIBCAMERA_REPO_OWNER}/app-bricks-py/releases/download/libcamera%2F${LIBCAMERA_VERSION}/libcamera0.7_${LIBCAMERA_VERSION}_arm64.deb; \
-    wget -O libcamera-ipa_${LIBCAMERA_VERSION}_arm64.deb https://github.com/${LIBCAMERA_REPO_OWNER}/app-bricks-py/releases/download/libcamera%2F${LIBCAMERA_VERSION}/libcamera-ipa_${LIBCAMERA_VERSION}_arm64.deb; \
-    wget -O gstreamer1.0-libcamera_${LIBCAMERA_VERSION}_arm64.deb https://github.com/${LIBCAMERA_REPO_OWNER}/app-bricks-py/releases/download/libcamera%2F${LIBCAMERA_VERSION}/gstreamer1.0-libcamera_${LIBCAMERA_VERSION}_arm64.deb; \
-    dpkg -i libcamera0.7_${LIBCAMERA_VERSION}_arm64.deb libcamera-ipa_${LIBCAMERA_VERSION}_arm64.deb gstreamer1.0-libcamera_${LIBCAMERA_VERSION}_arm64.deb; \
+    # Install dependencies for running libcamera.
+    # Note: libpisp1 / libboost 1.83.0 / libcamera .deb were originally for the
+    # Raspberry Pi OS trixie base, but with `python:3.12-slim-bookworm` they are
+    # not in the Debian 12 repos. The original libcamera deb chain also requires
+    # those Pi-only deps. Commenting out — if your app needs libcamera, re-enable
+    # and use the bookworm versions of these packages.
+    # apt-get install -y libpisp-common libboost-filesystem1.74.0 libboost-log1.74.0 libboost-thread1.74.0 libpisp1 libegl1 libgles2 libyaml-0-2 liblttng-ust1 libdw1 libyuv0; \
+    # wget -O libcamera0.7_${LIBCAMERA_VERSION}_arm64.deb https://github.com/${LIBCAMERA_REPO_OWNER}/app-bricks-py/releases/download/libcamera%2F${LIBCAMERA_VERSION}/libcamera0.7_${LIBCAMERA_VERSION}_arm64.deb; \
+    # wget -O libcamera-ipa_${LIBCAMERA_VERSION}_arm64.deb https://github.com/${LIBCAMERA_REPO_OWNER}/app-bricks-py/releases/download/libcamera%2F${LIBCAMERA_VERSION}/libcamera-ipa_${LIBCAMERA_VERSION}_arm64.deb; \
+    # wget -O gstreamer1.0-libcamera_${LIBCAMERA_VERSION}_arm64.deb https://github.com/${LIBCAMERA_REPO_OWNER}/app-bricks-py/releases/download/libcamera%2F${LIBCAMERA_VERSION}/gstreamer1.0-libcamera_${LIBCAMERA_VERSION}_arm64.deb; \
+    # dpkg -i libcamera0.7_${LIBCAMERA_VERSION}_arm64.deb libcamera-ipa_${LIBCAMERA_VERSION}_arm64.deb gstreamer1.0-libcamera_${LIBCAMERA_VERSION}_arm64.deb; \
     # Install other runtime dependencies
-    apt-get install -y --no-install-recommends --no-install-suggests libglib2.0-0 inotify-tools libzbar0; \
+    apt-get install -y --no-install-recommends --no-install-suggests inotify-tools libzbar0; \
     mkdir -p /home/app/.fonts; \
     wget -O /home/app/.fonts/OpenSans.ttf https://raw.githubusercontent.com/googlefonts/opensans/main/fonts/ttf/OpenSans-Regular.ttf; \
     apt-get remove -y wget; \
     apt-get autoclean -y; \
     apt-get autoremove -y; \
-    dpkg -r --force-depends libegl-mesa0 mesa-libgallium libllvm19; \
-    apt-get dist-clean; \
+    # NOTE: original Dockerfile did `dpkg -r --force-depends libegl-mesa0 mesa-libgallium libllvm19`
+    # to strip 200+MB of mesa/llvm. With Debian 12 bookworm and libgl1 properly
+    # installed, we keep mesa-libgallium in place — `mediapipe` and
+    # `opencv-contrib-python` both need libGL.so.1 to load. The size hit is
+    # acceptable for fork builds; trim again if you ship to production.
     # cleanup unnecessary files to reduce image size
     rm -rf /tmp/* /var/tmp/*; \
     rm -rf /var/lib/apt/lists/*; \
