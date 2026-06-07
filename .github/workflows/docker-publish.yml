@@ -17,11 +17,11 @@ on:
 env:
   GHCR_REGISTRY: ghcr.io
   # Docker FROM clauses require lowercase repository names (spec, not GHCR).
-  # GitHub's `repository_owner` is whatever the user typed when creating the
-  # account — for `InverseDesign` that means a capital I/D, which fails the
-  # FROM stage parse in `containers/python-apps-base/Dockerfile`. GHCR is
-  # case-insensitive on org names, so lowercasing the env var is safe.
-  GHCR_DESTINATION_ORG: ghcr.io/${{ toLowerCase(github.repository_owner) }}
+  # GitHub Actions expressions don't support a lowercase function, so the only
+  # way to derive a lowercased owner in `env:` is to hardcode it. GHCR is
+  # case-insensitive on org names, so writing the org as `inversedesign`
+  # resolves to the same namespace as `InverseDesign`.
+  GHCR_DESTINATION_ORG: ghcr.io/inversedesign
   GH_DESTINATION_REPO: https://github.com/${{ github.repository }}
 
 permissions:
